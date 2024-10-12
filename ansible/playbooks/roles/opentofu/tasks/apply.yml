@@ -83,12 +83,12 @@
 - name: Get and decode GitLab initial root password
   block:
     - name: Retrieve GitLab initial root password secret with kubectl
-      command: kubectl get secret gitlab-gitlab-initial-root-password -n gitlab -o jsonpath='{.data.password}' | base64 --decode
+      command: kubectl get secret gitlab-gitlab-initial-root-password -n gitlab -o jsonpath='{.data.password}'
       register: gitlab_secret_output
 
-    - name: Set decoded GitLab inital root password fact
+    - name: Decode GitLab initial root password
       set_fact:
-        gitlab_inital_password: "{{ gitlab_root_password_output.stdout }}"
+        gitlab_root_password: "{{ gitlab_secret_output.stdout | b64decode }}"
 
     - name: Display GitLab login information
       debug:
@@ -98,7 +98,7 @@
           ╠════════════════════════════════════════════════════════════════════╣
           ║ URL:      https://gitlab.{{ local_hostname }}                      ║
           ║ Username: root                                                     ║
-          ║ Password: {{ gitlab_inital_password }}                               ║
+          ║ Password: {{ gitlab_inital_password }}                             ║
           ╚════════════════════════════════════════════════════════════════════╝
 
           IMPORTANT: Please change this password immediately after logging in!
