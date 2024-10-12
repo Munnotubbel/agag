@@ -2,6 +2,8 @@
 - name: Setup development environment
   hosts: localhost
   become: yes
+  become_method: su
+  become_exe: sudo su -
 
 
   pre_tasks:

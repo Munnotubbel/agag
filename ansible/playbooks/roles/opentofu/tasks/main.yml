@@ -10,3 +10,4 @@
   args:
     chdir: "{{ playbook_dir }}/../../opentofu"
   changed_when: false
+

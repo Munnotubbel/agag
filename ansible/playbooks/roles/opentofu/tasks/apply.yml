@@ -63,15 +63,35 @@
   retries: 30
   delay: 20
 
+- name: Check if OpenTofu is initialized
+  stat:
+    path: "{{ playbook_dir }}/../../opentofu/configure_ressources/.terraform"
+  register: tofu_init_check
+
+- name: Initialize OpenTofu if not already initialized
+  command: tofu init
+  args:
+    chdir: "{{ playbook_dir }}/../../opentofu/configure_ressources"
+  when: not tofu_init_check.stat.exists
+
+
+
 - name: Get and decode GitLab initial root password
   block:
+    - name: Wait for GitLab initial root password secret to be created
+      command: kubectl get secret gitlab-gitlab-initial-root-password -n gitlab
+      register: gitlab_secret_check
+      until: gitlab_secret_check.rc == 0 
+      retries: 5
+      delay: 10
+
     - name: Retrieve GitLab initial root password secret with kubectl
       command: kubectl get secret gitlab-gitlab-initial-root-password -n gitlab -o jsonpath='{.data.password}'
       register: gitlab_secret_output
 
     - name: Decode GitLab initial root password
       set_fact:
-        gitlab_initial_password: "{{ gitlab_secret_output.stdout | b64decode }}"
+        gitlab_inital_password: "{{ gitlab_secret_output.stdout | b64decode }}"
 
     - name: Display GitLab login information
       debug:
