@@ -23,12 +23,6 @@ provider "helm" {
 }
 
 
-
-variable "ssh_public_key" {
-  description = "Your SSH public key"
-  type        = string
-}
-
 locals {
   env = { for tuple in regexall("(.*)=(.*)", file("../../.env")) : tuple[0] => tuple[1] }
 }

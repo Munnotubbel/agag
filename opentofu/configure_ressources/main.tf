@@ -38,9 +38,8 @@ variable "gitlab_token" {
   sensitive   = true
 }
 
-variable "ssh_public_key" {
-  description = "Your SSH public key"
-  type        = string
+locals {
+  ssh_public_key = file("~/.ssh/id_rsa.pub")
 }
 
 locals {
@@ -67,7 +66,7 @@ module "gitlab_structure" {
   source = "./modules/gitlab_structure"
   gitlab_url = local.gitlab_url
   hostname = local.hostname
-  ssh_public_key = var.ssh_public_key
+  ssh_public_key = local.ssh_public_key
   gitlab_token   = var.gitlab_token
   providers = {
     kubernetes = kubernetes
@@ -82,7 +81,7 @@ module "kubernetes" {
   gitlab_agent_token  = module.gitlab_structure.gitlab_agent_token
   gitlab_url          = local.gitlab_url
   hostname = local.hostname
-  ssh_public_key = var.ssh_public_key
+  ssh_public_key = local.ssh_public_key
   gitlab_token   = var.gitlab_token
   providers = {
     kubernetes = kubernetes
