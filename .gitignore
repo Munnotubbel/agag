@@ -1,0 +1,10 @@
+.env
+.runner_system*
+.terraform*
+gitlab-data/
+node-modules/
+opentofu/.terraform*
+opentofu/terraform*
+target/
+terraform.*
+package-lock.json

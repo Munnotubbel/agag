@@ -1,0 +1,4 @@
+include:
+  - project: 'ententeich/ci-cd'
+    file: 'main-config.yml'
+

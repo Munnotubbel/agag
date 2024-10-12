@@ -1,0 +1,12 @@
+- name: Make OpenTofu executable
+  file:
+    path: /usr/local/bin/tofu
+    mode: '0755'
+  when: ansible_system != "Darwin"
+
+
+- name: Initialize OpenTofu
+  command: tofu init
+  args:
+    chdir: "{{ playbook_dir }}/../../opentofu"
+  changed_when: false

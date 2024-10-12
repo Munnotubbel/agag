@@ -1,0 +1,17 @@
+resources:
+  - ../../base/
+
+patches:
+  - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: frontente-ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: frontente.prod
+
+images:
+  - name: registry.minikube/frontente:<patched>
+    newTag: IMAGE_TAG

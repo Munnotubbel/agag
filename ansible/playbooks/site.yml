@@ -1,0 +1,43 @@
+---
+- name: Setup development environment
+  hosts: localhost
+  become: yes
+
+
+  pre_tasks:
+    - include_tasks: "tasks/{{ ansible_os_family | lower }}.yml"
+      when: ansible_os_family | lower in ['darwin', 'debian', 'redhat']
+
+  roles:
+    - common
+    - docker
+    - opentofu
+
+- name: Setup Kind
+  hosts: localhost
+  become: no
+
+  roles:
+    - kind
+
+
+  handlers:
+    - name: Restart Docker
+      service:
+        name: docker
+        state: restarted
+
+
+- name: Apply OpenTofu configurations
+  hosts: localhost
+  become: no
+
+  tasks:
+    - include_tasks: roles/opentofu/tasks/apply.yml
+
+- name: Push Code to GitLab Repositories
+  hosts: localhost
+  become: no
+
+  roles:
+    - gitlab

@@ -1,0 +1,45 @@
+
+.deploy:
+  image: bitnami/kubectl:latest
+  script:
+    - gitlab-agent check-connection
+    - kubectl config get-contexts
+    - kubectl cluster-info
+    - cd $CI_PROJECT_DIR/k8s/cluster/${CI_ENVIRONMENT_NAME}
+    - sed -i "s/IMAGE_TAG/\"$DATE_TAG\"/g" kustomization.yml
+    - cat kustomization.yml
+    - kubectl apply -k . -n ${KUBERNETES_NAMESPACE}
+  dependencies:
+    - build
+
+.deploy_dev:
+  extends: .deploy
+  variables:
+    KUBERNETES_NAMESPACE: ${KUBERNETES_NAMESPACE_DEV}
+    KUBE_CONTEXT: agent
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+  environment:
+    name: dev
+
+.deploy_stg:
+  extends: .deploy
+  variables:
+    KUBERNETES_NAMESPACE: ${KUBERNETES_NAMESPACE_STG}
+    KUBE_CONTEXT: agent
+  rules:
+    - if: $CI_COMMIT_BRANCH == "stg"
+      when: manual
+  environment:
+    name: stg
+
+.deploy_prod:
+  extends: .deploy
+  variables:
+    KUBERNETES_NAMESPACE: ${KUBERNETES_NAMESPACE_PROD}
+    KUBE_CONTEXT: agent
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+  environment:
+    name: prod

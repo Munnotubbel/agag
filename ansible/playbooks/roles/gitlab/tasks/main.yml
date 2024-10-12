@@ -1,0 +1,100 @@
+---
+- name: Ensure Git repositories are set up and synchronized
+  block:
+    - name: Initialize Git repo
+      command:
+        cmd: git init --initial-branch=main
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - ci-cd
+        - backente
+        - frontente
+
+    - name: Configure Git user name
+      command:
+        cmd: git config user.name "Ansible Automation"
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - ci-cd
+        - backente
+        - frontente
+
+    - name: Configure Git user email
+      command:
+        cmd: git config user.email "admin@from-hell.gg"
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - ci-cd
+        - backente
+        - frontente
+
+    - name: Add GitLab remote with custom SSH port
+      command:
+        cmd: git remote add origin ssh://git@{{ gitlab_host | default('localhost') }}:2222/ententeich/{{ item }}.git
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - ci-cd
+        - backente
+        - frontente
+      ignore_errors: yes
+
+    - name: Configure Git to use custom SSH command
+      command:
+        cmd: git config core.sshCommand "ssh -p 2222"
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - ci-cd
+        - backente
+        - frontente
+
+    - name: Fetch and merge remote changes
+      shell:
+        cmd: |
+          git fetch origin
+          git merge --allow-unrelated-histories origin/main || true
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - ci-cd
+        - backente
+        - frontente
+
+    - name: Add all files, commit, and push to main branch
+      shell:
+        cmd: |
+          git add .
+          git commit -m "Inital Commit" || true
+          git push --set-upstream origin main
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - ci-cd
+        - backente
+        - frontente
+
+    - name: Create and push stg branch
+      shell:
+        cmd: |
+          git checkout -B stg
+          git push --set-upstream origin stg
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - backente
+        - frontente
+
+    - name: Create and push dev branch
+      shell:
+        cmd: |
+          git checkout -B dev
+          git push --set-upstream origin dev
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - backente
+        - frontente
+
+    - name: Ensure on main branch
+      command:
+        cmd: git checkout main
+        chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
+      loop:
+        - ci-cd
+        - backente
+        - frontente

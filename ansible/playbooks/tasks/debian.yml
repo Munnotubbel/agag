@@ -1,0 +1,121 @@
+---
+- name: Update apt cache
+  become: yes
+  apt:
+    update_cache: yes
+
+- name: Install Debian-specific dependencies
+  become: yes
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - curl
+    state: present
+
+- name: Add Docker GPG apt Key
+  become: yes
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker Repository
+  become: yes
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable
+    state: present
+
+- name: Update apt and install docker-ce
+  become: yes
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: latest
+    update_cache: true
+
+- name: Start and enable Docker service
+  become: yes
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Get non-root username
+  set_fact:
+    non_root_user: "{{ ansible_env.SUDO_USER | default(ansible_user_id) }}"
+
+- name: Add user to docker group
+  become: yes
+  user:
+    name: "{{ non_root_user }}"
+    groups: docker
+    append: yes
+  register: user_added_to_docker
+
+- name: Apply group changes
+  become: yes
+  command: newgrp docker
+  changed_when: false
+
+- name: Install Docker Compose
+  become: yes
+  get_url:
+    url: "https://github.com/docker/compose/releases/latest/download/docker-compose-{{ ansible_system }}-{{ ansible_architecture }}"
+    dest: "/usr/local/bin/docker-compose"
+    mode: '0755'
+
+- name: Install kubectl
+  become: yes
+  apt:
+    deb: https://dl.k8s.io/release/v1.28.0/bin/linux/amd64/kubectl
+    state: present
+
+- name: Install OpenTofu
+  become: yes
+  apt:
+    deb: https://github.com/opentofu/opentofu/releases/download/v1.6.0-alpha5/tofu_1.6.0-alpha5_amd64.deb
+
+- name: Add GitLab Runner repository
+  become: yes
+  shell: curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
+  args:
+    warn: false
+
+- name: Install GitLab Runner
+  become: yes
+  apt:
+    name: gitlab-runner
+    state: present
+    update_cache: yes
+
+- name: Start and enable GitLab Runner service
+  become: yes
+  systemd:
+    name: gitlab-runner
+    state: started
+    enabled: yes
+
+- name: Check if KinD is already installed
+  command: which kind
+  register: kind_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Install KinD
+  become: yes
+  block:
+    - name: Download KinD
+      get_url:
+        url: "https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64"
+        dest: /usr/local/bin/kind
+        mode: '0755'
+      when: kind_check.rc != 0
+
+    - name: Verify KinD installation
+      command: kind --version
+      register: kind_version
+      changed_when: false
+  when: kind_check.rc != 0

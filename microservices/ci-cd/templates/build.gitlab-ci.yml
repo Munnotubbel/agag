@@ -1,0 +1,54 @@
+# .build:
+#   stage: build
+#   # image: docker:latest
+#   image: bitnami/kubectl:latest
+#   script:
+#     - export TIMESTAMP=$(date +%Y%m%d%H%M%S)
+#     - echo $TIMESTAMP > build_timestamp.txt
+#     - echo $KUBECONFIG
+#     - kubectl config view
+#     - kubectl config get-contexts
+#     - kubectl config use-context ententeich/ci-cd:kubernetes-agent
+#     - kubectl get nodes
+#     - kubectl get pods -n monitoring
+#     - docker build -t registry.minikube/$CI_PROJECT_NAME:$CI_COMMIT_SHA -t registry.minikube/$CI_PROJECT_NAME:$TIMESTAMP .
+#     - docker push registry.minikube/$CI_PROJECT_NAME:$CI_COMMIT_SHA
+#     - docker push registry.minikube/$CI_PROJECT_NAME:$TIMESTAMP
+#   artifacts:
+#     paths:
+#       - build_timestamp.txt
+#   rules:
+#     - if: $CI_COMMIT_BRANCH
+#     - if: $CI_PIPELINE_SOURCE == "web"
+
+
+.build:
+  stage: build
+  image: bitnami/kubectl:latest
+  script:
+    - export TIMESTAMP=$(date +%Y%m%d%H%M%S)
+    - echo $TIMESTAMP > build_timestamp.txt
+    - kubectl config view --raw
+    - ip route
+    - echo "----------------------------------------x"
+    - nslookup 192.168.49.2
+    - kubectl config use-context ententeich/ci-cd:kubernetes-agent
+    - kubectl get nodes
+    - kubectl get pods -n monitoring
+  rules:
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+.build_merge_request:
+  stage: build
+  image: docker:latest
+  script:
+    - docker build -t registry.minikube/$CI_PROJECT_NAME:$CI_COMMIT_SHA -t registry.minikube/$CI_PROJECT_NAME:$TIMESTAMP .
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+
+build:
+  extends: .build
+
+build_merge_request:
+  extends: .build_merge_request

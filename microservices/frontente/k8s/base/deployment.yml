@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontente
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontente
+  template:
+    metadata:
+      labels:
+        app: frontente
+    spec:
+      containers:
+      - name: frontente
+        image: registry.minikube/frontente:<patched>
+        ports:
+        - containerPort: 80

@@ -1,0 +1,157 @@
+- name: Update DNF cache
+  become: yes
+  dnf:
+    update_cache: yes
+
+- name: Install Fedora-specific dependencies
+  become: yes
+  dnf:
+    name:
+      - ca-certificates
+      - curl
+      - dnf-plugins-core
+    state: present
+
+- name: Add Docker repository
+  become: yes
+  get_url:
+    url: https://download.docker.com/linux/fedora/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+
+- name: Install Docker
+  become: yes
+  dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+
+- name: Start Docker service
+  become: yes
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Get current user
+  command: whoami
+  register: current_user
+  changed_when: false
+
+- name: Check if user is in docker group
+  command: groups {{ current_user.stdout }}
+  register: user_groups
+  changed_when: false
+
+- name: Add user to docker group
+  become: yes
+  user:
+    name: "{{ current_user.stdout }}"
+    groups: docker
+    append: yes
+  when: "'docker' not in user_groups.stdout"
+  register: user_added_to_docker
+
+- name: Reboot if user was added to docker group
+  become: yes
+  reboot:
+    msg: "Rebooting to apply group changes"
+  when: user_added_to_docker.changed
+
+- name: Check if Docker Compose is installed
+  command: docker-compose --version
+  register: docker_compose_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Install Docker Compose
+  become: yes
+  get_url:
+    url: "https://github.com/docker/compose/releases/latest/download/docker-compose-{{ ansible_system }}-{{ ansible_architecture }}"
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+  when: docker_compose_check.rc != 0
+
+- name: Install kubectl
+  become: yes
+  get_url:
+    url: https://storage.googleapis.com/kubernetes-release/release/stable.txt
+    dest: /tmp/stable.txt
+
+- name: Install kubectl
+  become: yes
+  get_url:
+    url: "https://storage.googleapis.com/kubernetes-release/release/{{ lookup('file', '/tmp/stable.txt') | trim }}/bin/linux/amd64/kubectl"
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+
+- name: Check if OpenTofu is already installed
+  command: which tofu
+  register: opentofu_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Install OpenTofu
+  become: yes
+  block:
+    - name: Download OpenTofu
+      get_url:
+        url: https://github.com/opentofu/opentofu/releases/download/v1.6.0-alpha5/tofu_1.6.0-alpha5_linux_amd64.zip
+        dest: /tmp/opentofu.zip
+      when: opentofu_check.rc != 0
+
+    - name: Unzip OpenTofu
+      unarchive:
+        src: /tmp/opentofu.zip
+        dest: /usr/local/bin
+        remote_src: yes
+      when: opentofu_check.rc != 0
+
+    - name: Clean up OpenTofu zip
+      file:
+        path: /tmp/opentofu.zip
+        state: absent
+      when: opentofu_check.rc != 0
+  when: opentofu_check.rc != 0
+
+- name: Add GitLab Runner repository
+  become: yes
+  shell: curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh" | sudo bash
+  args:
+    executable: /bin/bash
+
+- name: Install GitLab Runner
+  become: yes
+  dnf:
+    name: gitlab-runner
+    state: present
+
+- name: Start and enable GitLab Runner service
+  become: yes
+  systemd:
+    name: gitlab-runner
+    state: started
+    enabled: yes
+
+- name: Check if KinD is already installed
+  command: which kind
+  register: kind_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Install KinD
+  become: yes
+  block:
+    - name: Download KinD
+      get_url:
+        url: "https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64"
+        dest: /usr/local/bin/kind
+        mode: '0755'
+      when: kind_check.rc != 0
+
+    - name: Verify KinD installation
+      command: kind --version
+      register: kind_version
+      changed_when: false
+  when: kind_check.rc != 0

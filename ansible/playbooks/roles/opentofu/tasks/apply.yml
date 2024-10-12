@@ -1,0 +1,110 @@
+---
+- name: Check Kubernetes configuration
+  command: kubectl config view --raw
+  register: kube_config
+  changed_when: false
+
+- name: Display Kubernetes configuration
+  debug:
+    var: kube_config.stdout_lines
+
+- name: Verify Kubernetes connection
+  command: kubectl get nodes
+  changed_when: false
+
+- name: Wait for Kubernetes API to be ready
+  command: kubectl get --raw='/readyz?verbose'
+  register: result
+  until: result.rc == 0
+  retries: 60
+  delay: 5
+  changed_when: false
+
+- name: Check if OpenTofu is initialized
+  stat:
+    path: "{{ playbook_dir }}/../../opentofu/setup_gitlab_and_runner/.terraform"
+  register: tofu_init_check
+
+- name: Initialize OpenTofu if not already initialized
+  command: tofu init
+  args:
+    chdir: "{{ playbook_dir }}/../../opentofu/setup_gitlab_and_runner"
+  when: not tofu_init_check.stat.exists
+
+- name: Apply OpenTofu Gitlab Setup
+  command: tofu apply -auto-approve
+  args:
+    chdir: "{{ playbook_dir }}/../../opentofu/setup_gitlab_and_runner"
+  environment:
+    KUBE_CONFIG_PATH: "~/.kube/config"
+    KUBECONFIG: "~/.kube/config"
+  register: tofu_apply
+  changed_when: "'Apply complete!' in tofu_apply.stdout"
+- name: Display OpenTofu apply output
+  debug:
+    var: tofu_apply.stdout_lines
+
+- name: Check for OpenTofu apply errors
+  fail:
+    msg: "OpenTofu apply failed. Please check the output above for details."
+  when: tofu_apply.rc != 0
+
+- name: Get hostname of local machine
+  command: hostname
+  register: hostname_result
+  changed_when: false
+
+- name: Set hostname fact
+  set_fact:
+    local_hostname: "{{ hostname_result.stdout }}"
+
+- name: Wait for GitLab to be accessible
+  uri:
+    url: "https://gitlab.{{ local_hostname }}"
+    validate_certs: no
+  register: gitlab_check
+  until:  gitlab_check.status in [200, 301, 302]
+  retries: 30
+  delay: 20
+
+- name: Check if OpenTofu is initialized
+  stat:
+    path: "{{ playbook_dir }}/../../opentofu/configure_ressources/.terraform"
+  register: tofu_init_check
+
+- name: Initialize OpenTofu if not already initialized
+  command: tofu init
+  args:
+    chdir: "{{ playbook_dir }}/../../opentofu/configure_ressources"
+  when: not tofu_init_check.stat.exists
+
+- name: Display GitLab URL
+  debug:
+    msg: "Please visit this URL to create a Personal Access Token: https://gitlab.{{ local_hostname }}/-/profile/personal_access_tokens"
+
+- name: Prompt for GitLab Personal Access Token
+  pause:
+    prompt: "Please enter your GitLab Personal Access Token"
+  register: gitlab_token_input
+
+- name: Set GitLab token fact
+  set_fact:
+    gitlab_token: "{{ gitlab_token_input.user_input }}"
+
+- name: Apply OpenTofu configuration
+  command: tofu apply -auto-approve -var="gitlab_token={{ gitlab_token }}"
+  args:
+    chdir: "{{ playbook_dir }}/../../opentofu/configure_ressources"
+  environment:
+    KUBE_CONFIG_PATH: "~/.kube/config"
+    KUBECONFIG: "~/.kube/config"
+  register: tofu_apply
+  changed_when: "'Apply complete!' in tofu_apply.stdout"
+- name: Display OpenTofu apply output
+  debug:
+    var: tofu_apply.stdout_lines
+
+- name: Check for OpenTofu apply errors
+  fail:
+    msg: "OpenTofu apply failed. Please check the output above for details."
+  when: tofu_apply.rc != 0

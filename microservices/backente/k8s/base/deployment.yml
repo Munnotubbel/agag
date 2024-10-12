@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backente
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backente
+  template:
+    metadata:
+      labels:
+        app: backente
+    spec:
+      containers:
+      - name: backente
+        image: registry.minikube/backente:<patched>
+        ports:
+        - containerPort: 8080

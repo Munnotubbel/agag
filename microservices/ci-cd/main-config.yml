@@ -1,0 +1,57 @@
+# before_script:
+#   - set -x
+#   - git config --global url."http://${CI_SERVER_HOST}:${CI_SERVER_PORT}/".insteadOf "http://gitlab/"
+
+include:
+  - local: 'variables.yml'
+  - local: '/templates/build.gitlab-ci.yml'
+  - local: '/templates/test.gitlab-ci.yml'
+  - local: '/templates/deploy.gitlab-ci.yml'
+
+stages:
+  - test
+  - build
+  - deploy
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_MERGE_REQUEST_ID
+
+test:merge_request:
+  extends: .test
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+
+# BUILD
+build:
+  extends: .build
+
+build_merge_request:
+  extends: .build_merge_request
+
+
+# DEPLOY
+deploy_dev:
+  extends: .deploy_dev
+  stage: deploy
+  needs: [build]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+
+deploy_stg:
+  extends: .deploy_stg
+  stage: deploy
+  needs: [build]
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == "stg"
+
+deploy_prod:
+  extends: .deploy_prod
+  stage: deploy
+  needs: [build]
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

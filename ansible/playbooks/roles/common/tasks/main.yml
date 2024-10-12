@@ -1,0 +1,11 @@
+# ansible/playbooks/roles/common/tasks/main.yml
+---
+- name: Install common dependencies (Linux)
+  package:
+    name:
+      - curl
+      - git
+      - python3-pip
+      - python-gitlab
+    state: present
+  when: ansible_system != "Darwin"

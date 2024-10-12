@@ -1,0 +1,24 @@
+ci_access:
+  projects:
+    - id: "ententeich/ci-cd"
+    - id: "ententeich/frontente"
+    - id: "ententeich/backente"
+  groups:
+    - id: ententeich
+
+
+# gitops:
+#   manifest_projects:
+#     - id: "ententeich/frontente"
+#       paths:
+#         - glob: '/k8s/**/*.{yaml,yml,json}'
+
+observability:
+  logging:
+    level: debug
+    grpc_level: warn
+
+# config_management:
+#   auto_update:
+#     enabled: true
+#     interval: 1h

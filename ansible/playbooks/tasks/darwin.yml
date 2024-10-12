@@ -1,0 +1,102 @@
+---
+- name: Install Homebrew (macOS)
+  shell: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  args:
+    creates: /usr/local/bin/brew
+
+- name: Install macOS dependencies
+  community.general.homebrew:
+    name:
+      - curl
+      - git
+      - python@3
+      - python-gitlab
+    state: present
+
+- name: Install Docker (macOS)
+  community.general.homebrew_cask:
+    name: docker
+    state: present
+
+- name: Ensure Docker is running (macOS)
+  command: open -a Docker
+
+- name: Wait for Docker to start
+  wait_for:
+    path: /var/run/docker.sock
+    state: present
+    timeout: 60
+
+- name: Get current user
+  command: whoami
+  register: current_user
+  changed_when: false
+
+- name: Ensure user is in docker group
+  user:
+    name: "{{ current_user.stdout }}"
+    groups: docker
+    append: yes
+  become: yes
+
+- name: Install Docker Compose
+  community.general.homebrew:
+    name: docker-compose
+    state: present
+
+- name: Install kubectl (macOS)
+  homebrew:
+    name: kubectl
+    state: present
+
+- name: Install KinD (macOS)
+  homebrew:
+    name: kind
+    state: present
+
+- name: Install OpenTofu (macOS)
+  community.general.homebrew:
+    name: opentofu
+    state: present
+
+- name: Check if GitLab Runner is installed
+  command: which gitlab-runner
+  register: gitlab_runner_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Download GitLab Runner (Apple Silicon)
+  get_url:
+    url: "https://s3.dualstack.us-east-1.amazonaws.com/gitlab-runner-downloads/latest/binaries/gitlab-runner-darwin-arm64"
+    dest: /usr/local/bin/gitlab-runner
+    mode: '0755'
+  when:
+    - ansible_architecture == 'arm64'
+    - gitlab_runner_check.rc != 0
+
+- name: Download GitLab Runner (Intel)
+  get_url:
+    url: "https://s3.dualstack.us-east-1.amazonaws.com/gitlab-runner-downloads/latest/binaries/gitlab-runner-darwin-amd64"
+    dest: /usr/local/bin/gitlab-runner
+    mode: '0755'
+  when:
+    - ansible_architecture == 'x86_64'
+    - gitlab_runner_check.rc != 0
+
+- name: Install GitLab Runner
+  command: gitlab-runner install
+  when:
+    - gitlab_runner_check.rc != 0
+
+- name: Start GitLab Runner
+  command: gitlab-runner start
+
+- name: Reload user groups
+  shell: |
+    if [ -x "$(command -v newgrp)" ]; then
+      newgrp docker
+    else
+      exec su -l $USER
+    fi
+  args:
+    executable: /bin/bash
