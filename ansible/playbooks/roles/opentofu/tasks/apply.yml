@@ -40,6 +40,7 @@
     KUBECONFIG: "~/.kube/config"
   register: tofu_apply
   changed_when: "'Apply complete!' in tofu_apply.stdout"
+
 - name: Display OpenTofu apply output
   debug:
     var: tofu_apply.stdout_lines
@@ -78,9 +79,55 @@
     chdir: "{{ playbook_dir }}/../../opentofu/configure_ressources"
   when: not tofu_init_check.stat.exists
 
-- name: Display GitLab URL
+
+- name: Get and decode GitLab initial root password
+  block:
+    - name: Retrieve GitLab initial root password secret with kubectl
+      command: kubectl get secret gitlab-gitlab-initial-root-password -n gitlab -o jsonpath='{.data.password}' | base64 --decode
+      register: gitlab_secret_output
+
+    - name: Set decoded GitLab inital root password fact
+      set_fact:
+        gitlab_inital_password: "{{ gitlab_root_password_output.stdout }}"
+
+    - name: Display GitLab login information
+      debug:
+        msg: |
+          ╔════════════════════════════════════════════════════════════════════╗
+          ║                     GitLab Login Information                       ║
+          ╠════════════════════════════════════════════════════════════════════╣
+          ║ URL:      https://gitlab.{{ local_hostname }}                      ║
+          ║ Username: root                                                     ║
+          ║ Password: {{ gitlab_inital_password }}                               ║
+          ╚════════════════════════════════════════════════════════════════════╝
+
+          IMPORTANT: Please change this password immediately after logging in!
+
+
+- name: Display GitLab Personal Access Token instructions
   debug:
-    msg: "Please visit this URL to create a Personal Access Token: https://gitlab.{{ local_hostname }}/-/profile/personal_access_tokens"
+    msg: |
+      ╔══════════════════════════════════════════════════════════════════════════════════════╗
+      ║               Create GitLab Personal Access Token                                    ║
+      ╠══════════════════════════════════════════════════════════════════════════════════════╣
+      ║ 1. Log in to GitLab using the credentials provided above.                            ║
+      ║ 2. Navigate to: https://gitlab.{{ local_hostname }}/-/profile/personal_access_tokens ║
+      ║ 3. Create a new token with the following scopes.                                     ║
+      ║                                                                                      ║
+      ║        • api (Full API access)                                                       ║
+      ║                                                                                      ║
+      ║        • read_repository (Read repository)                                           ║
+      ║                                                                                      ║
+      ║        • write_repository (Write repository)                                         ║
+      ║                                                                                      ║
+      ║        • read_registry (Read Container Registry)                                     ║
+      ║                                                                                      ║
+      ║        • write_registry (Write Container Registry)                                   ║
+      ║                                                                                      ║
+      ║ 4. Copy the generated token and keep it secure.                                      ║
+      ╚══════════════════════════════════════════════════════════════════════════════════════╝
+
+      NOTE: This token will be used for further GitLab operations.
 
 - name: Prompt for GitLab Personal Access Token
   pause:
