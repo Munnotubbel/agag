@@ -22,19 +22,19 @@
 
 - name: Check if OpenTofu is initialized for GitLab setup
   stat:
-    path: "{{ playbook_dir }}/../../opentofu/setup_gitlab_and_runner/.terraform"
+    path: "{{ playbook_dir }}/../../opentofu/setup_gitlab/.terraform"
   register: tofu_gitlab_init_check
 
 - name: Initialize OpenTofu for GitLab setup if needed
   command: tofu init
   args:
-    chdir: "{{ playbook_dir }}/../../opentofu/setup_gitlab_and_runner"
+    chdir: "{{ playbook_dir }}/../../opentofu/setup_gitlab"
   when: not tofu_gitlab_init_check.stat.exists
 
 - name: Apply OpenTofu GitLab Setup
   command: tofu apply -auto-approve
   args:
-    chdir: "{{ playbook_dir }}/../../opentofu/setup_gitlab_and_runner"
+    chdir: "{{ playbook_dir }}/../../opentofu/setup_gitlab"
   environment:
     KUBE_CONFIG_PATH: "~/.kube/config"
     KUBECONFIG: "~/.kube/config"
@@ -91,7 +91,7 @@
 
     - name: Decode GitLab initial root password
       set_fact:
-        gitlab_inital_password: "{{ gitlab_secret_output.stdout | b64decode }}"
+        gitlab_initial_password: "{{ gitlab_secret_output.stdout | b64decode }}"
 
     - name: Display GitLab login information
       debug:

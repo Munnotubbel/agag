@@ -2,7 +2,6 @@
 .deploy:
   image: bitnami/kubectl:latest
   script:
-    - gitlab-agent check-connection
     - kubectl config get-contexts
     - kubectl cluster-info
     - cd $CI_PROJECT_DIR/k8s/cluster/${CI_ENVIRONMENT_NAME}
@@ -11,6 +10,28 @@
     - kubectl apply -k . -n ${KUBERNETES_NAMESPACE}
   dependencies:
     - build
+
+
+# .build:
+#   stage: build
+#   image: bitnami/kubectl:latest
+#   script:
+#     - export TIMESTAMP=$(date +%Y%m%d%H%M%S)
+#     - echo $TIMESTAMP > build_timestamp.txt
+#     - echo "$KUBECONFIG" > kubeconfig.yaml
+#     - export KUBECONFIG="$PWD/kubeconfig.yaml"
+#     - chmod 600 kubeconfig.yaml
+#     - kubectl config view --raw
+#     - kubectl config get-contexts
+#     - kubectl get pods -n gitlab
+#     - kubectl get pods -n gitlab
+#     - kubectl get nodes
+#     - kubectl cluster-info
+
+#   rules:
+#     - if: $CI_COMMIT_BRANCH
+#     - if: $CI_PIPELINE_SOURCE == "web"
+
 
 .deploy_dev:
   extends: .deploy

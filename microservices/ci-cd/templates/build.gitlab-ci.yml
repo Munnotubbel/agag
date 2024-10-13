@@ -1,19 +1,12 @@
-# .build:
+# # .build:
 #   stage: build
-#   # image: docker:latest
-#   image: bitnami/kubectl:latest
+#   image: bitnami/minideb:latest
 #   script:
 #     - export TIMESTAMP=$(date +%Y%m%d%H%M%S)
 #     - echo $TIMESTAMP > build_timestamp.txt
-#     - echo $KUBECONFIG
-#     - kubectl config view
-#     - kubectl config get-contexts
-#     - kubectl config use-context ententeich/ci-cd:kubernetes-agent
-#     - kubectl get nodes
-#     - kubectl get pods -n monitoring
-#     - docker build -t registry.minikube/$CI_PROJECT_NAME:$CI_COMMIT_SHA -t registry.minikube/$CI_PROJECT_NAME:$TIMESTAMP .
-#     - docker push registry.minikube/$CI_PROJECT_NAME:$CI_COMMIT_SHA
-#     - docker push registry.minikube/$CI_PROJECT_NAME:$TIMESTAMP
+#     - docker build -t kind-registry:5000/$CI_PROJECT_NAME:$CI_COMMIT_SHA -t kind-registry:5000/$CI_PROJECT_NAME:$TIMESTAMP .
+#     - docker push kind-registry:5000/$CI_PROJECT_NAME:$CI_COMMIT_SHA
+#     - docker push kind-registry:5000/$CI_PROJECT_NAME:$TIMESTAMP
 #   artifacts:
 #     paths:
 #       - build_timestamp.txt
@@ -22,28 +15,52 @@
 #     - if: $CI_PIPELINE_SOURCE == "web"
 
 
-.build:
+build:
   stage: build
-  image: bitnami/kubectl:latest
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
   script:
+    - curl --silent --fail http://registry:5000/v2/ && echo "Registry is available" && exit 0 || echo "Registry is not available" && exit 1
     - export TIMESTAMP=$(date +%Y%m%d%H%M%S)
     - echo $TIMESTAMP > build_timestamp.txt
-    - kubectl config view --raw
-    - ip route
-    - echo "----------------------------------------x"
-    - nslookup 192.168.49.2
-    - kubectl config use-context ententeich/ci-cd:kubernetes-agent
-    - kubectl get nodes
-    - kubectl get pods -n monitoring
+    - curl 
+    - /kaniko/executor 
+      --context "${CI_PROJECT_DIR}" 
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}:${TIMESTAMP}"
+      --insecure
+  artifacts:
+    paths:
+      - build_timestamp.txt
   rules:
     - if: $CI_COMMIT_BRANCH
     - if: $CI_PIPELINE_SOURCE == "web"
 
+# .build:
+#   stage: build
+#   image: docker:latest
+#   services:
+#     - docker:dind
+#   variables:
+#     DOCKER_TLS_CERTDIR: ""
+#   script:
+
+#     - docker build -t kind-registry:5000/$CI_PROJECT_NAME:$CI_COMMIT_SHA -t kind-registry:5000/$CI_PROJECT_NAME:$TIMESTAMP .
+#     - docker push kind-registry:5000/$CI_PROJECT_NAME:$CI_COMMIT_SHA
+#     - docker push kind-registry:5000/$CI_PROJECT_NAME:$TIMESTAMP
+#   artifacts:
+#     paths:
+#       - build_timestamp.txt
+#   rules:
+#     - if: $CI_COMMIT_BRANCH
+#     - if: $CI_PIPELINE_SOURCE == "web"
+
 .build_merge_request:
   stage: build
-  image: docker:latest
+  image: bitnami/minideb:latest
   script:
-    - docker build -t registry.minikube/$CI_PROJECT_NAME:$CI_COMMIT_SHA -t registry.minikube/$CI_PROJECT_NAME:$TIMESTAMP .
+    - docker build -t kind-registry:5000/$CI_PROJECT_NAME:$CI_COMMIT_SHA -t kind-registry:5000/$CI_PROJECT_NAME:$TIMESTAMP .
   rules:
     - if: $CI_MERGE_REQUEST_ID
 

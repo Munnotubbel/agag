@@ -60,7 +60,7 @@ module "gitlab_setup" {
   gitlab_url = local.gitlab_url
   cluster_ip = local.cluster_ip
   pg_password = coalesce(local.env["PG_PASSWORD"], "")
-
+  runner_token =  coalesce(local.env["GITLAB_RUNNER_TOKEN"], "")
   providers = {
     kubernetes = kubernetes
     helm       = helm

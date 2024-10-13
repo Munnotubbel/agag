@@ -39,11 +39,6 @@
     append: yes
   become: yes
 
-- name: Install Docker Compose
-  community.general.homebrew:
-    name: docker-compose
-    state: present
-
 - name: Install kubectl (macOS)
   homebrew:
     name: kubectl
@@ -58,38 +53,6 @@
   community.general.homebrew:
     name: opentofu
     state: present
-
-- name: Check if GitLab Runner is installed
-  command: which gitlab-runner
-  register: gitlab_runner_check
-  ignore_errors: yes
-  changed_when: false
-
-- name: Download GitLab Runner (Apple Silicon)
-  get_url:
-    url: "https://s3.dualstack.us-east-1.amazonaws.com/gitlab-runner-downloads/latest/binaries/gitlab-runner-darwin-arm64"
-    dest: /usr/local/bin/gitlab-runner
-    mode: '0755'
-  when:
-    - ansible_architecture == 'arm64'
-    - gitlab_runner_check.rc != 0
-
-- name: Download GitLab Runner (Intel)
-  get_url:
-    url: "https://s3.dualstack.us-east-1.amazonaws.com/gitlab-runner-downloads/latest/binaries/gitlab-runner-darwin-amd64"
-    dest: /usr/local/bin/gitlab-runner
-    mode: '0755'
-  when:
-    - ansible_architecture == 'x86_64'
-    - gitlab_runner_check.rc != 0
-
-- name: Install GitLab Runner
-  command: gitlab-runner install
-  when:
-    - gitlab_runner_check.rc != 0
-
-- name: Start GitLab Runner
-  command: gitlab-runner start
 
 - name: Reload user groups
   shell: |

@@ -115,25 +115,6 @@
       when: opentofu_check.rc != 0
   when: opentofu_check.rc != 0
 
-- name: Add GitLab Runner repository
-  become: yes
-  shell: curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh" | sudo bash
-  args:
-    executable: /bin/bash
-
-- name: Install GitLab Runner
-  become: yes
-  dnf:
-    name: gitlab-runner
-    state: present
-
-- name: Start and enable GitLab Runner service
-  become: yes
-  systemd:
-    name: gitlab-runner
-    state: started
-    enabled: yes
-
 - name: Check if KinD is already installed
   command: which kind
   register: kind_check

@@ -30,7 +30,7 @@
 
     - name: Add GitLab remote with custom SSH port
       command:
-        cmd: git remote add origin ssh://git@{{ gitlab_host | default('localhost') }}:2222/ententeich/{{ item }}.git
+        cmd: git remote add origin ssh://git@gitlab.{{ ansible_hostname }}:30103/ententeich/{{ item }}.git
         chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
       loop:
         - ci-cd
@@ -40,7 +40,7 @@
 
     - name: Configure Git to use custom SSH command
       command:
-        cmd: git config core.sshCommand "ssh -p 2222"
+        cmd: git config core.sshCommand "ssh -p 30103"
         chdir: "{{ playbook_dir }}/../../microservices/{{ item }}"
       loop:
         - ci-cd

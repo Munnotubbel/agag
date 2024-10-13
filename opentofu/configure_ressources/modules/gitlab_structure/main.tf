@@ -102,6 +102,19 @@ resource "gitlab_project_variable" "k8s_agent_token" {
   masked    = true
 }
 
+locals {
+  kubeconfig_content = file("~/.kube/config")
+}
+
+resource "gitlab_project_variable" "kubeconfig" {
+  project     = gitlab_project.microservices["ci-cd"].id
+  key         = "KUBECONFIG"
+  value       = local.kubeconfig_content
+  variable_type = "file"
+  protected   = true
+  masked      = false
+}
+
 output "gitlab_projects" {
   value = { for k, v in gitlab_project.microservices : k => v.web_url }
 }

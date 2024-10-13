@@ -28,12 +28,26 @@ resource "kubernetes_secret" "gitlab_postgresql_password" {
   }
 }
 
+resource "kubernetes_secret" "gitlab_runner" {
+  metadata {
+    name      = "gitlab-runner"
+    namespace = "gitlab"
+  }
+
+  data = {
+    registrationToken = base64encode(var.runner_token)
+  }
+
+  type = "Opaque"
+}
+
 resource "helm_release" "gitlab" {
   depends_on = [kubernetes_secret.gitlab_postgresql_password]
   name       = "gitlab"
   repository = "https://charts.gitlab.io"
   chart      = "gitlab"
   namespace  = kubernetes_namespace.gitlab.metadata[0].name
+  version    = var.chart_version
   wait = false
 
    set {
@@ -57,6 +71,11 @@ resource "helm_release" "gitlab" {
   }
 
   set {
+    name = "global.shell.port"
+    value = 30103
+  }
+
+  set {
     name  = "global.hosts.domain"
     value = var.hostname
   }
@@ -64,6 +83,16 @@ resource "helm_release" "gitlab" {
   set {
     name  = "global.kas.enabled"
     value = false
+  }
+
+  set {
+    name = "gitlab.gitlab-shell.service.type"
+    value = "NodePort"
+  }
+
+  set {
+    name = "gitlab.gitlab-shell.service.nodePort"
+    value = 30103
   }
 
 
@@ -132,7 +161,7 @@ resource "helm_release" "gitlab" {
     value = "local-storage"
   }
 
-   set {
+  set {
     name  = "gitlab-runner.install"
     value = false
   }

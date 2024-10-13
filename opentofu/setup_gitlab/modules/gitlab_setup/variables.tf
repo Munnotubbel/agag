@@ -18,4 +18,14 @@ variable "pg_password" {
   type        = string
 }
 
+variable "chart_version" {
+  description = "The version of the GitLab Helm chart to use"
+  type        = string
+  default     = "8.4.2"
+}
 
+variable "runner_token" {
+  description = "GitLab Runner Registration Token"
+  type        = string
+  sensitive   = true
+}

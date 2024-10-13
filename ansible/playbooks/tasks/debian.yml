@@ -78,26 +78,6 @@
   apt:
     deb: https://github.com/opentofu/opentofu/releases/download/v1.6.0-alpha5/tofu_1.6.0-alpha5_amd64.deb
 
-- name: Add GitLab Runner repository
-  become: yes
-  shell: curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
-  args:
-    warn: false
-
-- name: Install GitLab Runner
-  become: yes
-  apt:
-    name: gitlab-runner
-    state: present
-    update_cache: yes
-
-- name: Start and enable GitLab Runner service
-  become: yes
-  systemd:
-    name: gitlab-runner
-    state: started
-    enabled: yes
-
 - name: Check if KinD is already installed
   command: which kind
   register: kind_check

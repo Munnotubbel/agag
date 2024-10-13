@@ -26,6 +26,6 @@ ansible-galaxy collection install community.library_inventory_filtering_v1
 ansible-galaxy collection install kubernetes.core
 
 print_fancy "Running Ansible playbook..." "yellow" "🎭"
-ansible-playbook ../ansible/playbooks/site.yml -K
+ANSIBLE_STDOUT_CALLBACK=yaml ansible-playbook ../ansible/playbooks/site.yml -K
 
 print_fancy "(>'-')> Setup completed! <('-'<)" "green" "🎉"

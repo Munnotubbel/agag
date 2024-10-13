@@ -7,7 +7,7 @@ variable "namespace" {
 variable "chart_version" {
   description = "The version of the GitLab Runner Helm chart to use"
   type        = string
-  default     = "0.50.1"
+  default     = "0.69"
 }
 
 
@@ -27,7 +27,7 @@ variable "runner_token" {
 variable "concurrent_runners" {
   description = "The number of concurrent runners"
   type        = number
-  default     = 3
+  default     = 20
 }
 
 variable "additional_helm_values" {
