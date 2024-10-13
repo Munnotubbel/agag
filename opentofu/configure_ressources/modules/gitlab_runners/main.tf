@@ -34,7 +34,7 @@
     metadata {
       name      = "gitlab-runner-tls"
       # namespace = kubernetes_namespace.gitlab_runner.metadata[0].name
-      namespace = "gitlab-runner"
+      namespace = "gitlab"
     }
 
     data = {
@@ -44,6 +44,7 @@
     type = "Opaque"
   }
 
+#tls secret von gitlab
   data "kubernetes_secret" "gitlab_tls" {
     metadata {
       name      = "gitlab-gitlab-tls"
@@ -66,7 +67,7 @@ resource "kubernetes_cluster_role_binding" "gitlab_runner_admin" {
   subject {
     kind      = "ServiceAccount"
     name      = "gitlab-runner"
-    namespace = "gitlab-runner"
+    namespace = "gitlab"
   }
 
   role_ref {
@@ -79,7 +80,7 @@ resource "kubernetes_cluster_role_binding" "gitlab_runner_admin" {
 resource "kubernetes_service_account" "gitlab_runner" {
   metadata {
     name      = "gitlab-runner"
-    namespace = "gitlab-runner"
+    namespace = "gitlab"
   }
 }
 
@@ -92,14 +93,15 @@ locals {
     name       = "gitlab-runner"
     repository = "https://charts.gitlab.io"
     chart      = "gitlab-runner"
-    namespace  = "gitlab-runner"
+    namespace  = "gitlab"
     version    = var.chart_version
     wait       = false
 
     set {
       name  = "gitlabUrl"
+      value = "http://gitlab-webservice-default:8080"
       # value = "https://gitlab.${var.hostname}"
-      value = "http://gitlab-webservice-default.gitlab.svc.cluster.local:8080"
+      # value = "http://gitlab-webservice-default.gitlab.svc.cluster.local:8080"
     
     }
 
@@ -188,7 +190,7 @@ locals {
         [[runners]]
           environment = ["GIT_SSL_NO_VERIFY=1"]
           [runners.kubernetes]
-          namespace = "gitlab-runner"
+          namespace = "gitlab"
           service_account = "gitlab-runner"
           [runners.kubernetes.volumes]
             [[runners.kubernetes.volumes.secret]]

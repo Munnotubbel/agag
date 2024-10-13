@@ -1,7 +1,7 @@
 variable "namespace" {
   description = "The Kubernetes namespace to install the GitLab Runner"
   type        = string
-  default     = "gitlab-runner"
+  default     = "gitlab"
 }
 
 variable "chart_version" {

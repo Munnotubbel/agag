@@ -15,11 +15,10 @@
 #     - if: $CI_PIPELINE_SOURCE == "web"
 
 
-build:
+.build:
   stage: build
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
-    entrypoint: [""]
   script:
     - curl --silent --fail http://registry:5000/v2/ && echo "Registry is available" && exit 0 || echo "Registry is not available" && exit 1
     - export TIMESTAMP=$(date +%Y%m%d%H%M%S)
